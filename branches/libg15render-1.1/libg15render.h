@@ -35,9 +35,9 @@ typedef struct g15canvas {
     int mode_cache;  
 /// g15canvas::mode_reverse determines whether color values passed to g15r_setPixel are reversed.
     int mode_reverse;  
-    FT_Library	ftLib;
-    static  FT_Face ttf_face[G15_MAX_FACE][sizeof(FT_Face)];
-    static int ttf_fontsize[G15_MAX_FACE];
+    FT_Library ftLib;
+    FT_Face ttf_face[G15_MAX_FACE][sizeof(FT_Face)];
+    int ttf_fontsize[G15_MAX_FACE];
 } g15canvas;
 
 /// \brief Fills an area bounded by (x1, y1) and (x2, y2)
@@ -77,7 +77,7 @@ void g15r_renderCharacterSmall(g15canvas * canvas, int x, int y, unsigned char c
 /// \brief Renders a string with font size in row
 void g15r_renderString(g15canvas * canvas, unsigned char stringOut[], int row, int size, unsigned int sx, unsigned int sy);
 
-void g15r_ttfLoad(g15canvas * canvas, char *fontname, int fontsize);
+void g15r_ttfLoad(g15canvas * canvas, char *fontname, int fontsize, int face_num);
 void g15r_ttfPrint(g15canvas * canvas, int x, int y, int fontsize, int face_num, int color, int center, char *print_string);
 
 #ifdef __cplusplus

@@ -120,23 +120,23 @@ void g15r_ttfLoad(g15canvas * canvas, char *fontname, int fontsize, int face_num
 
     if(face_num<0) 
         face_num=0;
-    if(face_num>MAX_FACE) 
-        face_num=MAX_FACE; 
+    if(face_num>G15_MAX_FACE) 
+        face_num=G15_MAX_FACE; 
 
     if(canvas->ttf_fontsize[face_num])
-        FT_Done_Face(canvas->face[face_num][0]); // destroy the last face
+        FT_Done_Face(canvas->ttf_face[face_num][0]); // destroy the last face
 
     if(!canvas->ttf_fontsize[face_num] && !fontsize) 
         canvas->ttf_fontsize[face_num] = 10;
     else
     	canvas->ttf_fontsize[face_num] = fontsize;
 
-    errcode = FT_New_Face (canvas->ftLib,fontname,0,&canvas->face[face_num][0]);
+    errcode = FT_New_Face (canvas->ftLib,fontname,0,&canvas->ttf_face[face_num][0]);
     if(errcode) {
         canvas->ttf_fontsize[face_num]=0;
     }else{
-        if(canvas->ttf_fontsize[face_num] && FT_IS_SCALABLE(canvas->face[face_num][0]))
-            errcode = FT_Set_Char_Size(canvas->face[face_num][0],0,canvas->ttf_fontsize[face_num]*64,90,0);
+        if(canvas->ttf_fontsize[face_num] && FT_IS_SCALABLE(canvas->ttf_face[face_num][0]))
+            errcode = FT_Set_Char_Size(canvas->ttf_face[face_num][0],0,canvas->ttf_fontsize[face_num]*64,90,0);
     }
 }
 
@@ -223,15 +223,15 @@ void g15r_ttfPrint(g15canvas * canvas, int x, int y, int fontsize, int face_num,
 	
 	if ( canvas->ttf_fontsize[face_num] ) 
 	{
-        if(fontsize > 0 && FT_IS_SCALABLE(canvas->face[face_num][0]))
+        if(fontsize > 0 && FT_IS_SCALABLE(canvas->ttf_face[face_num][0]))
         {
             canvas->ttf_fontsize[face_num] = fontsize;
-            int errcode = FT_Set_Pixel_Sizes(canvas->face[face_num][0],0,canvas->ttf_fontsize[face_num]);
+            int errcode = FT_Set_Pixel_Sizes(canvas->ttf_face[face_num][0],0,canvas->ttf_fontsize[face_num]);
             if (errcode) printf("Trouble setting the Glyph size!\n");
         }
-        y=calc_ttf_true_ypos(canvas->face[face_num][0], y, canvas->ttf_fontsize[face_num]);
+        y=calc_ttf_true_ypos(canvas->ttf_face[face_num][0], y, canvas->ttf_fontsize[face_num]);
         if (center > 0)
-        	x=calc_ttf_centering(canvas->face[face_num][0], print_string);
-        draw_ttf_str(canvas, print_string, x, y, color, canvas->face[face_num][0]);
+        	x=calc_ttf_centering(canvas->ttf_face[face_num][0], print_string);
+        draw_ttf_str(canvas, print_string, x, y, color, canvas->ttf_face[face_num][0]);
     }
 }

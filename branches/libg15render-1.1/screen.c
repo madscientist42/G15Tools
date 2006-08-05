@@ -88,5 +88,4 @@ void g15r_initCanvas(g15canvas * canvas)
    canvas->mode_xor = 0;
    if (FT_Init_FreeType( &canvas->ftLib ))
       printf("Freetype couldnt initialise\n");
-   canvas->current_face = 0;
 }
