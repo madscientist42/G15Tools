@@ -468,6 +468,7 @@ nt_screen_command:
 
 int yywrap() 
 {
+	fclose (yyin);
 	if ((yyin = fopen (fifo_filename,"r")) == 0)
 	  {
 	  	perror (fifo_filename);
