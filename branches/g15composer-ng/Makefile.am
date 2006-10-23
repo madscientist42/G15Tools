@@ -1,0 +1,13 @@
+bin_PROGRAMS = g15composer
+g15composer_SOURCES = g15composer.tab.c g15composer.lex.c
+EXTRA_DIST = g15composer.l g15composer.y
+noinst_HEADERS = g15composer.h
+
+g15composer.tab.c: g15composer.lex.c g15composer.y g15composer.h
+	$(YACC) -d g15composer.y
+
+g15composer.lex.c: g15composer.l g15composer.h
+	$(LEX) -o g15composer.lex.c g15composer.l
+
+clean-local:
+	rm -f g15composer.lex.c g15composer.tab.*
