@@ -1,9 +1,28 @@
 %{
+/*
+    This file is part of g15tools.
+
+    g15tools is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+
+    g15tools is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with g15tools; if not, write to the Free Software
+    Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+*/
+
 #include <stdio.h>
 #include <string.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
+#include <pthread.h>
 #include <libg15.h>
 #include <libg15render.h>
 #include <g15daemon_client.h>
@@ -474,9 +493,49 @@ void
 printUsage ()
 {
   fprintf (stdout, "Usage: g15composer [-b] /path/to/fifo\n");
-  fprintf (stdout, "       cat instructions > /path/to/fifo\n");
-  fprintf (stdout, "\n");
+  fprintf (stdout, "       cat instructions > /path/to/fifo\n\n");
   fprintf (stdout, "Display composer for the Logitech G15 LCD\n");
+}
+
+void
+*threadEntry (void *arg)
+{
+	struct parserData *param = (struct parserData *)arg;
+
+	param->canvas = (g15canvas *) malloc (sizeof (g15canvas));
+	yylex_init (&param->scanner);
+	if ((yyset_in (fopen(param->fifo_filename, "r"), param->scanner)) == 0)
+	  {
+	  	perror( param->fifo_filename);
+		exit (1);
+	  }
+	if ((param->g15screen_fd = new_g15_screen (G15_G15RBUF)) < 0)
+	  {
+	  	fprintf (stderr, "Sorry, can't connect to g15daemon\n");
+		exit (1);
+	  }
+	g15r_initCanvas (param->canvas);
+	int result = 0;
+	while (param->leaving == 0)
+	  {
+		result = yyparse(param);
+		fclose (yyget_in(param->scanner));
+		if (param->leaving != 0)
+		  {
+			if ((yyset_in(fopen (param->fifo_filename,"r"), param->scanner)) == 0)
+			  {
+			  	perror (param->fifo_filename);
+				param->leaving = 1;
+			  }
+			if (!param->canvas->mode_cache)
+			  g15r_clearScreen (param->canvas, G15_COLOR_WHITE);
+		  }
+	  }
+	g15_close_screen (param->g15screen_fd);
+	free (param->canvas);
+	yylex_destroy (param->scanner);
+	free (param);
+	pthread_exit(pthread_self());
 }
 
 int 
@@ -484,8 +543,9 @@ main (int argc, char *argv[])
 {
 	int background = 0;
 	struct parserData *param = (struct parserData *) malloc (sizeof (struct parserData));
-
 	param->fifo_filename = NULL;
+	param->leaving = 0;
+	param->g15screen_fd = 0;
 
 	int i = 1;
 	for (i = 1; (i < argc && param->fifo_filename == NULL); ++i)
@@ -507,40 +567,8 @@ main (int argc, char *argv[])
 	
 	if (param->fifo_filename != NULL)
 	  {
-	  	param->canvas = (g15canvas *) malloc (sizeof (g15canvas));
-		yylex_init (&param->scanner);
-		if ((yyset_in (fopen(param->fifo_filename, "r"), param->scanner)) == 0)
-		  {
-		  	perror( param->fifo_filename);
-			exit (1);
-		  }
-		if ((param->g15screen_fd = new_g15_screen (G15_G15RBUF)) < 0)
-		  {
-		  	fprintf (stderr, "Sorry, can't connect to g15daemon\n");
-			exit (1);
-		  }
-		g15r_initCanvas (param->canvas);
-		int result = 0;
-		while (param->leaving == 0)
-		  {
-			result = yyparse(param);
-			fclose (yyget_in(param->scanner));
-			if (param->leaving != 0)
-			  {
-				if ((yyset_in(fopen (param->fifo_filename,"r"), param->scanner)) == 0)
-				  {
-				  	perror (param->fifo_filename);
-					return (1);
-				  }
-				if (!param->canvas->mode_cache)
-				  g15r_clearScreen (param->canvas, G15_COLOR_WHITE);
-			  }
-		  }
-		g15_close_screen (param->g15screen_fd);
-		free (param->canvas);
-		yylex_destroy (param->scanner);
-		free (param);
-		return result;
+	  	pthread_create (&param->thread, NULL, threadEntry, (void *) param);
+		pthread_join (param->thread, NULL);
 	  }
 }
 
