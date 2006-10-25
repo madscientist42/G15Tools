@@ -52,10 +52,12 @@ struct parserData
 typedef struct strList *List;
 typedef struct strItem *String;
 
+int yyerror (char *err);
+void printUsage ();
+void *threadEntry (void *arg);
 struct strList * new_strList ();
 void add_string (struct strList *strList, char *string);
 void updateScreen (g15canvas *canvas, int g15screen_fd, int force);
-void *threadEntry (void *arg);
 
 
 #endif /* G15COMPOSER_H_ */

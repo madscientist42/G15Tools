@@ -1,7 +1,7 @@
 bin_PROGRAMS = g15composer
-g15composer_SOURCES = g15composer.tab.c g15composer.lex.c g15composer.tab.h g15c_logo.h
+g15composer_SOURCES = g15composer.c g15composer.tab.c g15composer.lex.c g15composer.tab.h 
 EXTRA_DIST = g15composer.l g15composer.y debian examples
-noinst_HEADERS = g15composer.h
+noinst_HEADERS = g15composer.h g15c_logo.h
 
 g15composer.tab.c: g15composer.lex.c g15composer.y g15composer.h
 	$(YACC) -b g15composer -d g15composer.y
