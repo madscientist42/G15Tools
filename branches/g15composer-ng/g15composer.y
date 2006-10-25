@@ -577,7 +577,7 @@ void
 		param->leaving = 1;
 	  }
 
-	if (param->background != 0)
+	if (!param->background)
   	  {
 		param->canvas = (g15canvas *) malloc (sizeof (g15canvas));
 		param->g15screen_fd = 0;
