@@ -91,7 +91,8 @@ nt_commands: /* empty */
 	{
 		if (((struct parserData *)param)->background == 1)
 		  return (0);
-		updateScreen (((struct parserData *)param)->canvas, ((struct parserData *)param)->g15screen_fd, 0);
+		if (((struct parserData *)param)->leaving != 1)
+		  updateScreen (((struct parserData *)param)->canvas, ((struct parserData *)param)->g15screen_fd, 0);
 	}
 	;
 
@@ -111,6 +112,8 @@ nt_command:
 			free (tmpItem);
 		  }
 		free (((struct parserData *)param)->listptr);
+		((struct parserData *)param)->listptr = NULL;
+		((struct parserData *)param)->itemptr = NULL;
 	}
 	| nt_key_command 
 	| nt_lcd_command 
@@ -516,10 +519,11 @@ nt_screen_command:
 	{
 		struct parserData *newParam = (struct parserData *) malloc (sizeof (struct parserData));
 		newParam->background = 0;
-		newParam->fifo_filename = $2;
+		newParam->fifo_filename = strdup ($2);
 
 	  	pthread_create (&newParam->thread, NULL, threadEntry, (void *) newParam);
 		pthread_detach (newParam->thread);
+		free ($2);
 	}
 
 	|
@@ -527,7 +531,6 @@ nt_screen_command:
 	T_SCREENCLOSE T_NEWLINE
 	{
 		((struct parserData *)param)->leaving = 1;
-		return (0);
 	}
 	;
 
@@ -603,7 +606,9 @@ void
 			  	perror (param->fifo_filename);
 				param->leaving = 1;
 			  }
-			if (!param->canvas->mode_cache && !param->background)
+			if (param->background == 1)
+			  continue;
+			if (!param->canvas->mode_cache)
 			  g15r_clearScreen (param->canvas, G15_COLOR_WHITE);
 		  }
 	  }
