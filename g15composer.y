@@ -84,21 +84,7 @@ int yydebug = 0;
 
 %pure_parser
 
-%start nt_program
-
 %%
-
-nt_program:
-	nt_commands nt_quit_command
-	;
-
-nt_quit_command:
-	T_SCREENCLOSE T_NEWLINE
-	{
-		((struct parserData *)param)->leaving = 1;
-		return (0);
-	}
-	;
 
 nt_commands: /* empty */
 	| nt_commands nt_command
@@ -534,6 +520,14 @@ nt_screen_command:
 
 	  	pthread_create (&newParam->thread, NULL, threadEntry, (void *) newParam);
 		pthread_detach (newParam->thread);
+	}
+
+	|
+
+	T_SCREENCLOSE T_NEWLINE
+	{
+		((struct parserData *)param)->leaving = 1;
+		return (0);
 	}
 	;
 
