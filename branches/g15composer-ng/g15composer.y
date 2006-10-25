@@ -28,6 +28,7 @@
 #include <g15daemon_client.h>
 
 #include "g15composer.h"
+#include "g15c_logo.h"
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -556,6 +557,7 @@ void
 *threadEntry (void *arg)
 {
 	struct parserData *param = (struct parserData *)arg;
+	extern short g15c_logo_data[6880];
 
 	param->leaving = 0;
 	param->keepFifo = 0;
@@ -571,12 +573,6 @@ void
 	
 	yylex_init (&param->scanner);
 
-	if ((yyset_in (fopen(param->fifo_filename, "r"), param->scanner)) == 0)
-	  {
-	  	perror( param->fifo_filename);
-		param->leaving = 1;
-	  }
-
 	if (!param->background)
   	  {
 		param->canvas = (g15canvas *) malloc (sizeof (g15canvas));
@@ -587,6 +583,17 @@ void
 			param->leaving = 1;
 	    	  }
 		g15r_initCanvas (param->canvas);
+		param->canvas->mode_reverse = 1;
+		g15r_pixelOverlay (param->canvas, 0, 0, 160, 43, g15c_logo_data);
+		param->canvas->mode_reverse = 0;
+		updateScreen (param->canvas, param->g15screen_fd, 1);
+		g15r_clearScreen (param->canvas, G15_COLOR_WHITE);
+	  }
+
+	if ((yyset_in (fopen(param->fifo_filename, "r"), param->scanner)) == 0)
+	  {
+	  	perror( param->fifo_filename);
+		param->leaving = 1;
 	  }
 
 	int result = 0;
