@@ -5,12 +5,21 @@
 #include "g15composer.tab.h"
 
 //extern YYSTYPE yylval;
+
+#define YY_INPUT(buf,result,max_size) \
+    { \
+    int c = getc(yyin); \
+    result = (c == EOF) ? YY_NULL : (buf[0] = c, 1); \
+    }
 %}
+
+%option bison-bridge reentrant noyywrap
 
 %%
 
 ^PS			return T_PIXELSET;
-^P[RF]			yylval.number=(yytext[1] == 'F' ? 1 : 0); return T_PIXELFILL;
+^PF			return T_PIXELFILL;
+^PR			return T_PIXELRFILL;
 ^PO			return T_PIXELOVERLAY;
 ^PB			return T_PIXELBOX;
 ^PC			return T_PIXELCLEAR;
@@ -34,8 +43,8 @@
 ^LC			return T_LCDCON;
 ^SN			return T_SCREENNEW;
 ^SC			return T_SCREENCLOSE;
-[0-9]+                  yylval.number=atoi(yytext); return T_NUMBER;
-\"[^\"\r\n]*\"		yylval.string=strdup(yytext+1); yylval.string[yyleng-2] = NULL; return T_STRING;
+[0-9]+                  yylval->number=atoi(yytext); return T_NUMBER;
+\"[^\"\r\n]*\"		yylval->string=strdup(yytext+1); yylval->string[yyleng-2] = NULL; return T_STRING;
 \n                      return T_NEWLINE;
 [ \t]+                  /* ignore whitespace */;
 

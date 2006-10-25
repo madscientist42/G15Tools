@@ -14,15 +14,10 @@
 #include "config.h"
 #endif
 
-struct strList *listptr;
-struct strItem *itemptr;
-g15canvas *canvas;
-int g15screen_fd;
-extern FILE *yyin;
-char *fifo_filename = NULL;
+#define YYPARSE_PARAM param
+#define YYLEX_PARAM   ((struct parserData *)param)->scanner
+
 int yydebug = 0;
-int mkey_state = 0;
-int leaving = 0;
 %}
 
 %union
@@ -36,7 +31,8 @@ int leaving = 0;
 %token <string> T_STRING
 %token T_NEWLINE
 %token T_PIXELSET
-%token <number> T_PIXELFILL
+%token T_PIXELFILL
+%token T_PIXELRFILL
 %token T_PIXELOVERLAY
 %token T_PIXELBOX
 %token T_PIXELCLEAR
@@ -64,6 +60,8 @@ int leaving = 0;
 %type <string> nt_string
 %type <strList> nt_strings
 
+%pure_parser
+
 %start nt_program
 
 %%
@@ -75,7 +73,7 @@ nt_program:
 nt_quit_command:
 	T_SCREENCLOSE T_NEWLINE
 	{
-		leaving = 1;
+		((struct parserData *)param)->leaving = 1;
 		return (0);
 	}
 	;
@@ -83,7 +81,7 @@ nt_quit_command:
 nt_commands: /* empty */
 	| nt_commands nt_command
 	{
-		updateScreen (0);
+		updateScreen (((struct parserData *)param)->canvas, ((struct parserData *)param)->g15screen_fd, 0);
 	}
 	;
 
@@ -94,15 +92,15 @@ nt_command:
 	| nt_font_command 
 	| nt_text_command
 	{
-		itemptr = listptr->first_string;
-		while (itemptr != 0)
+		((struct parserData *)param)->itemptr = ((struct parserData *)param)->listptr->first_string;
+		while (((struct parserData *)param)->itemptr != 0)
 		  {
-		  	free (itemptr->string);
-			struct strItem *tmpItem = itemptr;
-			itemptr = itemptr->next_string;
+		  	free (((struct parserData *)param)->itemptr->string);
+			struct strItem *tmpItem = ((struct parserData *)param)->itemptr;
+			((struct parserData *)param)->itemptr = ((struct parserData *)param)->itemptr->next_string;
 			free (tmpItem);
 		  }
-		free (listptr);
+		free (((struct parserData *)param)->listptr);
 	}
 	| nt_key_command 
 	| nt_lcd_command 
@@ -133,20 +131,21 @@ nt_strings: /* empty */
 nt_pixel_command:
 	T_PIXELSET T_NUMBER T_NUMBER T_NUMBER T_NEWLINE
 	{
-		g15r_setPixel (canvas, $2, $3, $4);
+		g15r_setPixel (((struct parserData *)param)->canvas, $2, $3, $4);
 	}
 
 	|
 
 	T_PIXELFILL T_NUMBER T_NUMBER T_NUMBER T_NUMBER T_NUMBER T_NEWLINE
 	{
-		int fill = $1;
-		int color = G15_COLOR_WHITE;
+		g15r_pixelReverseFill (((struct parserData *)param)->canvas, $2, $3, $4, $5, 1, $6);
+	}
 
-		if (fill == 1)
-		  color = $5;
+	|
 
-		g15r_pixelReverseFill (canvas, $2, $3, $4, $5, fill, color);
+	T_PIXELRFILL T_NUMBER T_NUMBER T_NUMBER T_NUMBER
+	{
+		g15r_pixelReverseFill (((struct parserData *)param)->canvas, $2, $3, $4, $5, 0, G15_COLOR_WHITE);
 	}
 
 	|
@@ -171,7 +170,7 @@ nt_pixel_command:
 		    	if ($6[i] == '1')
 	      	          output_line[i] = 1;
 	      	  }
-	  	g15r_pixelOverlay (canvas, $2, $3, $4, $5, output_line);
+	  	g15r_pixelOverlay (((struct parserData *)param)->canvas, $2, $3, $4, $5, output_line);
 		free ($6);
 	}
 
@@ -179,66 +178,66 @@ nt_pixel_command:
 
 	T_PIXELBOX T_NUMBER T_NUMBER T_NUMBER T_NUMBER T_NUMBER T_NUMBER T_NUMBER T_NEWLINE
 	{
-		g15r_pixelBox (canvas, $2, $3, $4, $5, $6, $7, $8);
+		g15r_pixelBox (((struct parserData *)param)->canvas, $2, $3, $4, $5, $6, $7, $8);
 	}
 
 	|
 
 	T_PIXELCLEAR T_NUMBER T_NEWLINE
 	{
-		g15r_clearScreen (canvas, $2);
+		g15r_clearScreen (((struct parserData *)param)->canvas, $2);
 	}
 	;
 
 nt_draw_command:
 	T_DRAWLINE T_NUMBER T_NUMBER T_NUMBER T_NUMBER T_NUMBER T_NEWLINE
 	{
-		g15r_drawLine (canvas, $2, $3, $4, $5, $6);
+		g15r_drawLine (((struct parserData *)param)->canvas, $2, $3, $4, $5, $6);
 	}
 
 	|
 
 	T_DRAWCIRCLE T_NUMBER T_NUMBER T_NUMBER T_NUMBER T_NUMBER T_NEWLINE
 	{
-		g15r_drawCircle (canvas, $2, $3, $4, $5, $6);
+		g15r_drawCircle (((struct parserData *)param)->canvas, $2, $3, $4, $5, $6);
 	}
 
 	|
 
 	T_DRAWRBOX T_NUMBER T_NUMBER T_NUMBER T_NUMBER T_NUMBER T_NUMBER T_NEWLINE
 	{
-		g15r_drawRoundBox (canvas, $2, $3, $4, $5, $6, $7);
+		g15r_drawRoundBox (((struct parserData *)param)->canvas, $2, $3, $4, $5, $6, $7);
 	}
 
 	|
 
 	T_DRAWBAR T_NUMBER T_NUMBER T_NUMBER T_NUMBER T_NUMBER T_NUMBER T_NUMBER T_NUMBER T_NEWLINE
 	{
-		g15r_drawBar (canvas, $2, $3, $4, $5, $6, $7, $8, $9);
+		g15r_drawBar (((struct parserData *)param)->canvas, $2, $3, $4, $5, $6, $7, $8, $9);
 	}
 	;
 
 nt_mode_command:
 	T_MODECACHE T_NUMBER T_NEWLINE
 	{
-		int was_cached = canvas->mode_cache;
-		canvas->mode_cache = $2;
+		int was_cached = ((struct parserData *)param)->canvas->mode_cache;
+		((struct parserData *)param)->canvas->mode_cache = $2;
 		if (was_cached)
-		  updateScreen (1);
+		  updateScreen (((struct parserData *)param)->canvas, ((struct parserData *)param)->g15screen_fd, 1);
 	}
 
 	|
 
 	T_MODEREV T_NUMBER T_NEWLINE
 	{
-		canvas->mode_reverse = $2;
+		((struct parserData *)param)->canvas->mode_reverse = $2;
 	}
 
 	|
 
 	T_MODEXOR T_NUMBER T_NEWLINE
 	{
-		canvas->mode_xor = $2;
+		((struct parserData *)param)->canvas->mode_xor = $2;
 	}
 
 	|
@@ -251,12 +250,12 @@ nt_mode_command:
 		char msgbuf[1];
 
 		msgbuf[0] = 'v';	/* Is the display visible? */
-		send (g15screen_fd, msgbuf, 1, MSG_OOB);
-		recv (g15screen_fd, msgbuf, 1, 0);
+		send (((struct parserData *)param)->g15screen_fd, msgbuf, 1, MSG_OOB);
+		recv (((struct parserData *)param)->g15screen_fd, msgbuf, 1, 0);
 		int at_front = (msgbuf[0] != 0) ? 1 : 0;
 		msgbuf[0] = 'u';	/* Did the user make the display visible? */
-		send (g15screen_fd, msgbuf, 1, MSG_OOB);
-		recv (g15screen_fd, msgbuf, 1, 0);
+		send (((struct parserData *)param)->g15screen_fd, msgbuf, 1, MSG_OOB);
+		recv (((struct parserData *)param)->g15screen_fd, msgbuf, 1, 0);
 		int user_to_front = (msgbuf[0] != 0) ? 1 : 0;
 		msgbuf[0] = 'p';	/* We now want to change the priority */
 		int sendCmd = 0;
@@ -283,7 +282,7 @@ nt_mode_command:
 		      }
 		  }
 		if (sendCmd == 1)
-		  send (g15screen_fd, msgbuf, 1, MSG_OOB);
+		  send (((struct parserData *)param)->g15screen_fd, msgbuf, 1, MSG_OOB);
 	}
 	;
 
@@ -291,7 +290,7 @@ nt_font_command:
 	T_FONTLOAD T_NUMBER T_NUMBER nt_string T_NEWLINE
 	{
 		#ifdef TTF_SUPPORT
-		g15r_ttfLoad (canvas, $4, $3, $2);
+		g15r_ttfLoad (((struct parserData *)param)->canvas, $4, $3, $2);
 		#endif
 		free ($4);
 	}
@@ -301,7 +300,7 @@ nt_font_command:
 	T_FONTPRINT T_NUMBER T_NUMBER T_NUMBER T_NUMBER T_NUMBER T_NUMBER nt_string T_NEWLINE
 	{
 		#ifdef TTF_SUPPORT
-		g15r_ttfPrint (canvas, $4, $5, $3, $2, $6, $7, $8);
+		g15r_ttfPrint (((struct parserData *)param)->canvas, $4, $5, $3, $2, $6, $7, $8);
 		#endif
 		free ($8);
 	}
@@ -310,14 +309,14 @@ nt_font_command:
 nt_text_command:
 	T_TEXTSMALL nt_strings T_NEWLINE
 	{
-		listptr = $2;
-		itemptr = listptr->first_string;
+		((struct parserData *)param)->listptr = $2;
+		((struct parserData *)param)->itemptr = ((struct parserData *)param)->listptr->first_string;
 
 		int row = 0;
-		for (row = 0; itemptr != 0; ++row)
+		for (row = 0; ((struct parserData *)param)->itemptr != 0; ++row)
 		  {
-			g15r_renderString (canvas, itemptr->string, row, G15_TEXT_SMALL, 0, 0);
-			itemptr = itemptr->next_string;
+			g15r_renderString (((struct parserData *)param)->canvas, ((struct parserData *)param)->itemptr->string, row, G15_TEXT_SMALL, 0, 0);
+			((struct parserData *)param)->itemptr = ((struct parserData *)param)->itemptr->next_string;
 		  }
 	}
 
@@ -325,14 +324,14 @@ nt_text_command:
 
 	T_TEXTMED nt_strings T_NEWLINE
 	{
-		listptr = $2;
-		itemptr = listptr->first_string;
+		((struct parserData *)param)->listptr = $2;
+		((struct parserData *)param)->itemptr = ((struct parserData *)param)->listptr->first_string;
 
 		int row = 0;
-		for (row = 0; itemptr != 0; ++row)
+		for (row = 0; ((struct parserData *)param)->itemptr != 0; ++row)
 		  {
-			g15r_renderString (canvas, itemptr->string, row, G15_TEXT_MED, 0, 0);
-			itemptr = itemptr->next_string;
+			g15r_renderString (((struct parserData *)param)->canvas, ((struct parserData *)param)->itemptr->string, row, G15_TEXT_MED, 0, 0);
+			((struct parserData *)param)->itemptr = ((struct parserData *)param)->itemptr->next_string;
 		  }
 	}
 
@@ -340,14 +339,14 @@ nt_text_command:
 
 	T_TEXTLARGE nt_strings T_NEWLINE
 	{
-		listptr = $2;
-		itemptr = listptr->first_string;
+		((struct parserData *)param)->listptr = $2;
+		((struct parserData *)param)->itemptr = ((struct parserData *)param)->listptr->first_string;
 
 		int row = 0;
-		for (row = 0; itemptr != 0; ++row)
+		for (row = 0; ((struct parserData *)param)->itemptr != 0; ++row)
 		  {
-			g15r_renderString (canvas, itemptr->string, row, G15_TEXT_LARGE, 0, 0);
-			itemptr = itemptr->next_string;
+			g15r_renderString (((struct parserData *)param)->canvas, ((struct parserData *)param)->itemptr->string, row, G15_TEXT_LARGE, 0, 0);
+			((struct parserData *)param)->itemptr = ((struct parserData *)param)->itemptr->next_string;
 		  }
 	}
 
@@ -355,16 +354,16 @@ nt_text_command:
 
 	T_TEXTOVERLAY T_NUMBER T_NUMBER T_NUMBER T_NUMBER nt_strings T_NEWLINE
 	{
-		listptr = $6;
-		itemptr = listptr->first_string;
+		((struct parserData *)param)->listptr = $6;
+		((struct parserData *)param)->itemptr = ((struct parserData *)param)->listptr->first_string;
 
 		int row = 0;
-		for (row = 0; itemptr != 0; ++row)
+		for (row = 0; ((struct parserData *)param)->itemptr != 0; ++row)
 		  {
 			if ($5)
 			  {
 			  	unsigned int dispcol = 0;
-				unsigned int len = strlen (itemptr->string);
+				unsigned int len = strlen (((struct parserData *)param)->itemptr->string);
 				
 				if ($4 == 0)
 				  dispcol = (80 - ((len * 4) / 2));
@@ -374,11 +373,11 @@ nt_text_command:
 				  dispcol = (80 - ((len * 8) / 2));
 				if (dispcol < 0)
 				  dispcol = 0;
-				g15r_renderString (canvas, itemptr->string, row, $4, dispcol, $3);
+				g15r_renderString (((struct parserData *)param)->canvas, ((struct parserData *)param)->itemptr->string, row, $4, dispcol, $3);
 			  }
 			else
-			  g15r_renderString (canvas, itemptr->string, row, $4, $2, $3);
-			itemptr = itemptr->next_string;
+			  g15r_renderString (((struct parserData *)param)->canvas, ((struct parserData *)param)->itemptr->string, row, $4, $2, $3);
+			((struct parserData *)param)->itemptr = ((struct parserData *)param)->itemptr->next_string;
 		  }
 	}
 	;
@@ -394,39 +393,39 @@ nt_key_command:
 	{
 		int sendCmd = 1;
 		int LEDon = $3;
-		mkey_state |= G15DAEMON_MKEYLEDS;
+		((struct parserData *)param)->mkey_state |= G15DAEMON_MKEYLEDS;
 		switch ($2)
 		  {
 		  case 0:
 		    {
 		      if (LEDon != 0)
-			mkey_state |= G15_LED_M1 | G15_LED_M2 | G15_LED_M3;
+			((struct parserData *)param)->mkey_state |= G15_LED_M1 | G15_LED_M2 | G15_LED_M3;
 		      else
-			mkey_state &= ~G15_LED_M1 & ~G15_LED_M2 & ~G15_LED_M3;
+			((struct parserData *)param)->mkey_state &= ~G15_LED_M1 & ~G15_LED_M2 & ~G15_LED_M3;
 		      break;
 		    }
 		  case 1:
 		    {
 		      if (LEDon != 0)
-			mkey_state |= G15_LED_M1;
+			((struct parserData *)param)->mkey_state |= G15_LED_M1;
 		      else
-			mkey_state &= ~G15_LED_M1;
+			((struct parserData *)param)->mkey_state &= ~G15_LED_M1;
 		      break;
 		    }
 		  case 2:
 		    {
 		      if (LEDon != 0)
-			mkey_state |= G15_LED_M2;
+			((struct parserData *)param)->mkey_state |= G15_LED_M2;
 		      else
-			mkey_state &= ~G15_LED_M2;
+			((struct parserData *)param)->mkey_state &= ~G15_LED_M2;
 		      break;
 		    }
 		  case 3:
 		    {
 		      if (LEDon != 0)
-			mkey_state |= G15_LED_M3;
+			((struct parserData *)param)->mkey_state |= G15_LED_M3;
 		      else
-			mkey_state &= ~G15_LED_M3;
+			((struct parserData *)param)->mkey_state &= ~G15_LED_M3;
 		      break;
 		    }
 		  default:
@@ -436,7 +435,7 @@ nt_key_command:
 		    }
 		  }
 		if (sendCmd == 1)
-		  send (g15screen_fd, &mkey_state, 1, MSG_OOB);
+		  send (((struct parserData *)param)->g15screen_fd, &((struct parserData *)param)->mkey_state, 1, MSG_OOB);
 	}
 	;
 
@@ -444,7 +443,7 @@ nt_lcd_command:
 	T_LCDBL T_NUMBER T_NEWLINE
 	{
 		char msgbuf = G15DAEMON_BACKLIGHT | $2;
-		send (g15screen_fd, &msgbuf, 1, MSG_OOB);
+		send (((struct parserData *)param)->g15screen_fd, &msgbuf, 1, MSG_OOB);
 	}
 
 	|
@@ -452,7 +451,7 @@ nt_lcd_command:
 	T_LCDCON T_NUMBER T_NEWLINE
 	{
 		char msgbuf = G15DAEMON_CONTRAST | $2;
-		send (g15screen_fd, &msgbuf, 1, MSG_OOB);
+		send (((struct parserData *)param)->g15screen_fd, &msgbuf, 1, MSG_OOB);
 	}
 	;
 
@@ -464,35 +463,36 @@ nt_screen_command:
 
 %%
 
-int yywrap() 
-{
-	fclose (yyin);
-	if ((yyin = fopen (fifo_filename,"r")) == 0)
-	  {
-	  	perror (fifo_filename);
-		return (1);
-	  }
-	if (!canvas->mode_cache)
-	  g15r_clearScreen (canvas, G15_COLOR_WHITE);
-	return (0);
-}
-
-int yyerror(char *err) 
+int 
+yyerror (char *err) 
 {
 	fprintf (stderr, "Error: %s\n",err);
 	return (0);
 }
 
-int main(int argc, char *argv[])
+void
+printUsage ()
+{
+  fprintf (stdout, "Usage: g15composer [-b] /path/to/fifo\n");
+  fprintf (stdout, "       cat instructions > /path/to/fifo\n");
+  fprintf (stdout, "\n");
+  fprintf (stdout, "Display composer for the Logitech G15 LCD\n");
+}
+
+int 
+main (int argc, char *argv[])
 {
 	int background = 0;
+	struct parserData *param = (struct parserData *) malloc (sizeof (struct parserData));
+
+	param->fifo_filename = NULL;
 
 	int i = 1;
-	for (i = 1; (i < argc && fifo_filename == NULL); ++i)
+	for (i = 1; (i < argc && param->fifo_filename == NULL); ++i)
 	  {
 	    if (!strcmp (argv[i],"-h") || !strcmp (argv[i],"--help"))
 	      {
-//	        printUsage ();
+	        printUsage ();
 	        return 0;
 	      }
 	    else if (!strcmp (argv[i],"-b"))
@@ -501,31 +501,45 @@ int main(int argc, char *argv[])
 	      }
 	    else
 	      {
-	        fifo_filename = argv[i];
+	        param->fifo_filename = argv[i];
 	      }
 	  }
 	
-	if (fifo_filename != NULL)
+	if (param->fifo_filename != NULL)
 	  {
-	  	canvas = (g15canvas *) malloc (sizeof (g15canvas));
-		if ((yyin = fopen (fifo_filename,"r")) == 0)
+	  	param->canvas = (g15canvas *) malloc (sizeof (g15canvas));
+		yylex_init (&param->scanner);
+		if ((yyset_in (fopen(param->fifo_filename, "r"), param->scanner)) == 0)
 		  {
-		  	perror( fifo_filename);
+		  	perror( param->fifo_filename);
 			exit (1);
 		  }
-		if ((g15screen_fd = new_g15_screen (G15_G15RBUF)) < 0)
+		if ((param->g15screen_fd = new_g15_screen (G15_G15RBUF)) < 0)
 		  {
 		  	fprintf (stderr, "Sorry, can't connect to g15daemon\n");
 			exit (1);
 		  }
-		g15r_initCanvas (canvas);
+		g15r_initCanvas (param->canvas);
 		int result = 0;
-		while (leaving == 0)
+		while (param->leaving == 0)
 		  {
-			result = yyparse();
+			result = yyparse(param);
+			fclose (yyget_in(param->scanner));
+			if (param->leaving != 0)
+			  {
+				if ((yyset_in(fopen (param->fifo_filename,"r"), param->scanner)) == 0)
+				  {
+				  	perror (param->fifo_filename);
+					return (1);
+				  }
+				if (!param->canvas->mode_cache)
+				  g15r_clearScreen (param->canvas, G15_COLOR_WHITE);
+			  }
 		  }
-		g15_close_screen (g15screen_fd);
-		free (canvas);
+		g15_close_screen (param->g15screen_fd);
+		free (param->canvas);
+		yylex_destroy (param->scanner);
+		free (param);
 		return result;
 	  }
 }
@@ -558,7 +572,7 @@ add_string (struct strList *list, char *string)
 }
 
 void
-updateScreen (int force)
+updateScreen (g15canvas *canvas, int g15screen_fd, int force)
 {
 	if (force || !canvas->mode_cache)
 	  g15_send (g15screen_fd, (char *) canvas->buffer, 1048);
