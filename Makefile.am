@@ -1,5 +1,5 @@
 bin_PROGRAMS = g15composer
-g15composer_SOURCES = g15composer.tab.c g15composer.lex.c g15composer.tab.h
+g15composer_SOURCES = g15composer.tab.c g15composer.lex.c g15composer.tab.h g15c_logo.h
 EXTRA_DIST = g15composer.l g15composer.y
 noinst_HEADERS = g15composer.h
 
