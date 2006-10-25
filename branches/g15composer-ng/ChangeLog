@@ -1,3 +1,6 @@
+3.0
+* Reimplement g15composer using flex and bison
+
 2.1
 * Move parts of G15Composer to G15Base
 * Implement simplified G15Control
