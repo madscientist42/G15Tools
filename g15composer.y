@@ -36,6 +36,7 @@
 
 #define YYPARSE_PARAM param
 #define YYLEX_PARAM   ((struct parserData *)param)->scanner
+#define YYERROR_VERBOSE true
 
 int yydebug = 0;
 
