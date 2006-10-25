@@ -94,6 +94,10 @@ nt_commands: /* empty */
 		if (((struct parserData *)param)->leaving != 1)
 		  updateScreen (((struct parserData *)param)->canvas, ((struct parserData *)param)->g15screen_fd, 0);
 	}
+
+	|
+
+	nt_commands error nt_command
 	;
 
 nt_command:
