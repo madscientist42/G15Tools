@@ -36,6 +36,7 @@ struct strItem
 
 struct parserData
 {
+	int background;
 	int g15screen_fd;
 	g15canvas *canvas;
 	struct strList *listptr;
@@ -43,6 +44,7 @@ struct parserData
 	char *fifo_filename;
 	int mkey_state;
 	int leaving;
+	int keepFifo;
 	void *scanner;
 	pthread_t thread;
 };
@@ -53,5 +55,7 @@ typedef struct strItem *String;
 struct strList * new_strList ();
 void add_string (struct strList *strList, char *string);
 void updateScreen (g15canvas *canvas, int g15screen_fd, int force);
+void *threadEntry (void *arg);
+
 
 #endif /* G15COMPOSER_H_ */
