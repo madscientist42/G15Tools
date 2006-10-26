@@ -200,12 +200,7 @@ nt_pixel_command:
 
 	|
 
-	T_PIXELBOX T_NUMBER T_NUMBER T_NUMBER T_NUMBER T_NUMBER T_NUMBER T_NUMBER T_NEWLINE
-	{
-		if (((struct parserData *)param)->background == 1)
-		  return (0);
-		g15r_pixelBox (((struct parserData *)param)->canvas, $2, $3, $4, $5, $6, $7, $8);
-	}
+	nt_pixelbox
 
 	|
 
@@ -214,6 +209,42 @@ nt_pixel_command:
 		if (((struct parserData *)param)->background == 1)
 		  return (0);
 		g15r_clearScreen (((struct parserData *)param)->canvas, $2);
+	}
+	;
+
+nt_pixelbox:
+	T_PIXELBOX T_NUMBER T_NUMBER T_NUMBER T_NUMBER T_NEWLINE
+	{
+		if (((struct parserData *)param)->background == 1)
+		  return (0);
+		g15r_pixelBox (((struct parserData *)param)->canvas, $2, $3, $4, $5, 1, 1, 0);
+	}
+
+	|
+
+	T_PIXELBOX T_NUMBER T_NUMBER T_NUMBER T_NUMBER T_NUMBER T_NEWLINE
+	{
+		if (((struct parserData *)param)->background == 1)
+		  return (0);
+		g15r_pixelBox (((struct parserData *)param)->canvas, $2, $3, $4, $5, $6, 1, 0);
+	}
+
+	|
+
+	T_PIXELBOX T_NUMBER T_NUMBER T_NUMBER T_NUMBER T_NUMBER T_NUMBER T_NEWLINE
+	{
+		if (((struct parserData *)param)->background == 1)
+		  return (0);
+		g15r_pixelBox (((struct parserData *)param)->canvas, $2, $3, $4, $5, $6, $7, 0);
+	}
+
+	|
+
+	T_PIXELBOX T_NUMBER T_NUMBER T_NUMBER T_NUMBER T_NUMBER T_NUMBER T_NUMBER T_NEWLINE
+	{
+		if (((struct parserData *)param)->background == 1)
+		  return (0);
+		g15r_pixelBox (((struct parserData *)param)->canvas, $2, $3, $4, $5, $6, $7, $8);
 	}
 	;
 
@@ -226,12 +257,37 @@ nt_draw_command:
 	}
 
 	|
+	nt_drawcircle
+	|
+	nt_drawrbox
+	|
+	nt_drawbar
+	;
+
+nt_drawcircle:
+	T_DRAWCIRCLE T_NUMBER T_NUMBER T_NUMBER T_NUMBER T_NEWLINE
+	{
+		if (((struct parserData *)param)->background == 1)
+		  return (0);
+		g15r_drawCircle (((struct parserData *)param)->canvas, $2, $3, $4, 0, $5);
+	}
+
+	|
 
 	T_DRAWCIRCLE T_NUMBER T_NUMBER T_NUMBER T_NUMBER T_NUMBER T_NEWLINE
 	{
 		if (((struct parserData *)param)->background == 1)
 		  return (0);
-		g15r_drawCircle (((struct parserData *)param)->canvas, $2, $3, $4, $5, $6);
+		g15r_drawCircle (((struct parserData *)param)->canvas, $2, $3, $4, $6, $5);
+	}
+	;
+
+nt_drawrbox:
+	T_DRAWRBOX T_NUMBER T_NUMBER T_NUMBER T_NUMBER T_NUMBER T_NEWLINE
+	{
+		if (((struct parserData *)param)->background == 1)
+		  return (0);
+		g15r_drawRoundBox (((struct parserData *)param)->canvas, $2, $3, $4, $5, 0, $6);
 	}
 
 	|
@@ -240,7 +296,16 @@ nt_draw_command:
 	{
 		if (((struct parserData *)param)->background == 1)
 		  return (0);
-		g15r_drawRoundBox (((struct parserData *)param)->canvas, $2, $3, $4, $5, $6, $7);
+		g15r_drawRoundBox (((struct parserData *)param)->canvas, $2, $3, $4, $5, $7, $6);
+	}
+	;
+
+nt_drawbar:
+	T_DRAWBAR T_NUMBER T_NUMBER T_NUMBER T_NUMBER T_NUMBER T_NUMBER T_NUMBER T_NEWLINE
+	{
+		if (((struct parserData *)param)->background == 1)
+		  return (0);
+		g15r_drawBar (((struct parserData *)param)->canvas, $2, $3, $4, $5, $6, $7, $8, 1);
 	}
 
 	|
@@ -288,19 +353,19 @@ nt_mode_command:
 	{
 		if (((struct parserData *)param)->background == 1)
 		  return (0);
-		int fore = ($2 == 0) ? 1 : 0;
-		int rear = ($2 == 1) ? 1 : 0;
-		int revert = ($2 == 2) ? 1 : 0;
+		int fore = ($2 == 0 ? 1 : 0);
+		int rear = ($2 == 1 ? 1 : 0);
+		int revert = ($2 == 2 ? 1 : 0);
 		char msgbuf[1];
 
 		msgbuf[0] = 'v';	/* Is the display visible? */
 		send (((struct parserData *)param)->g15screen_fd, msgbuf, 1, MSG_OOB);
 		recv (((struct parserData *)param)->g15screen_fd, msgbuf, 1, 0);
-		int at_front = (msgbuf[0] != 0) ? 1 : 0;
+		int at_front = (msgbuf[0] != 0 ? 1 : 0);
 		msgbuf[0] = 'u';	/* Did the user make the display visible? */
 		send (((struct parserData *)param)->g15screen_fd, msgbuf, 1, MSG_OOB);
 		recv (((struct parserData *)param)->g15screen_fd, msgbuf, 1, 0);
-		int user_to_front = (msgbuf[0] != 0) ? 1 : 0;
+		int user_to_front = (msgbuf[0] != 0 ? 1 : 0);
 		msgbuf[0] = 'p';	/* We now want to change the priority */
 		int sendCmd = 0;
 		if (at_front == 1)
@@ -320,7 +385,7 @@ nt_mode_command:
 		      {
 			sendCmd = 1;
 		      }
-		    else if ((user_to_front == 0) && (revert == 1))	/* we want to take back the foreground if forced to the back */
+		    else if ((user_to_front == 1) && (revert == 1))	/* we want to take back the foreground if forced to the back */
 		      {
 			sendCmd = 1;
 		      }
