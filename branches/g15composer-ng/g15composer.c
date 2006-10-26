@@ -65,7 +65,7 @@ void
 		param->keepFifo = 1;
 	  }
 	chmod (param->fifo_filename, mode);
-	
+
 	yylex_init (&param->scanner);
 
 	if (!param->background)
@@ -87,7 +87,7 @@ void
 
 	if ((yyset_in (fopen(param->fifo_filename, "r"), param->scanner)) == 0)
 	  {
-	  	perror( param->fifo_filename);
+	  	perror (param->fifo_filename);
 		param->leaving = 1;
 	  }
 

@@ -22,8 +22,6 @@
 
 #include "g15composer.tab.h"
 
-//extern YYSTYPE yylval;
-
 #define YY_INPUT(buf,result,max_size) \
     { \
     int c = getc(yyin); \
