@@ -1,8 +1,10 @@
-g15composer (3.0-1) dapper; urgency=low
+g15composer (3.0-1) edgy; urgency=low
 
   * Reimplement g15composer using flex and bison
+  * Text may now be right justified with the TO command
+  * Some command syntax has changed.  See README for details.
 
- -- Anthony J. Mirabella <mirabeaj@gmail.com> Wed, 25 Oct 2006 04:13:13 -0400
+ -- Anthony J. Mirabella <mirabeaj@gmail.com> Thu, 26 Oct 2006 17:06:13 -0400
 
 g15composer (2.1-1) dapper; urgency=low
 
