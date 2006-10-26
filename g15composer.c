@@ -187,3 +187,48 @@ updateScreen (g15canvas *canvas, int g15screen_fd, int force)
 	if (force || !canvas->mode_cache)
 	  g15_send (g15screen_fd, (char *) canvas->buffer, 1048);
 }
+
+int
+getDispCol (int len, int size, int type)
+{
+	int dispcol = 0;
+
+	switch (size)
+	  {
+	  	case 0:
+		  {
+			if (type == 1)
+ 	  		  dispcol = (80 - ((len * 4) / 2));
+			else if (type == 2)
+			  dispcol = (80 - (len * 4));
+			break;
+		  }
+		case 1:
+		  {
+			if (type == 1)
+ 	  		  dispcol = (80 - ((len * 5) / 2));
+			else if (type == 2)
+			  dispcol = (80 - (len * 5));
+			break;
+		  }
+		case 2:
+		  {
+			if (type == 1)
+ 	  		  dispcol = (80 - ((len * 8) / 2));
+			else if (type == 2)
+			  dispcol = (80 - (len * 8));
+			break;
+		  }
+		default:
+		  {
+		  	dispcol = 0;
+			break;
+		  }
+	  }
+	
+	if (dispcol < 0)
+	  dispcol = 0;
+
+	return dispcol;
+}
+

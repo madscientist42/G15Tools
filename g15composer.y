@@ -486,14 +486,7 @@ nt_text_command:
 			  	unsigned int dispcol = 0;
 				unsigned int len = strlen (((struct parserData *)param)->itemptr->string);
 				
-				if ($4 == 0)
-				  dispcol = (80 - ((len * 4) / 2));
-				if ($4 == 1)
-				  dispcol = (80 - ((len * 5) / 2));
-				if ($4 == 2)
-				  dispcol = (80 - ((len * 8) / 2));
-				if (dispcol < 0)
-				  dispcol = 0;
+				dispcol = getDispCol (len, $4, $5);
 				g15r_renderString (((struct parserData *)param)->canvas, ((struct parserData *)param)->itemptr->string, row, $4, dispcol, $3);
 			  }
 			else

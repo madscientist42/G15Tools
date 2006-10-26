@@ -22,8 +22,9 @@ Ts "line 1" "line 2" ...
    where s is the size of the font (S, M and L are supported).
    To insert a double-quote, prefix it with a backslash
 
-TO X Y S C "line 1" "line 2" ... 
-   Overlays text of the given size at (X,Y), centered if C=1
+TO X Y S F "line 1" "line 2" ... 
+   Overlays text of the given size at (X,Y)
+   Text will be centered if F=1 and right justified if F=2
 
 *** Font Command: (NB., g15composer must be configured with --enable-ttf to use font commands)
 
