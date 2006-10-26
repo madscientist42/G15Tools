@@ -58,6 +58,6 @@ void *threadEntry (void *arg);
 struct strList * new_strList ();
 void add_string (struct strList *strList, char *string);
 void updateScreen (g15canvas *canvas, int g15screen_fd, int force);
-
+int getDispCol (int len, int size, int type);
 
 #endif /* G15COMPOSER_H_ */
