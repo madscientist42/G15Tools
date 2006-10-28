@@ -1,0 +1,12 @@
+libg15 (1.0.1-1) breezy; urgency=low
+
+  * Change transfer type from interrupt to bulk for keypresses, which resolves problems for some people
+
+ -- Anthony J. Mirabella <mirabeaj@gmail.com>  Sat, 28 Oct 2006 16:29:31 -0400
+
+libg15 (1.0-1) breezy; urgency=low
+
+  * Initial release 
+
+ -- Anthony J. Mirabella <mirabeaj@gmail.com>  Sun, 24 Sep 2006 22:57:06 -0400
+
