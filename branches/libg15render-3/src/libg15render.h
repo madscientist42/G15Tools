@@ -18,6 +18,17 @@ extern "C"
 #include FT_BITMAP_H
 #endif
 
+typedef enum { G15R_FALSE = 0, G15R_TRUE } g15r_bool_t;
+
+enum
+{
+    G15R_ERROR_NONE = 0,        // All is well.
+    G15R_ERROR_OUT_OF_MEMORY,   // Ran out of memory.
+    G15R_ERROR_INVALID_RCTX,    // Invalid render context.
+    G15R_ERROR_RCTX_NOT_FOUND,  // Named render context not found.
+    G15R_ERROR_PARAMETER        // Invalid parameter in call.
+};
+
 #define BYTE_SIZE 		8
 #define G15_BUFFER_LEN  	1048
 #define G15_LCD_OFFSET  	32
