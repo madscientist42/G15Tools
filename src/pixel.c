@@ -14,8 +14,12 @@
     You should have received a copy of the GNU General Public License
     along with g15lcd; if not, write to the Free Software
     Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+
+    $Id$
 */
 
+#include <stdlib.h>
+#include <unistd.h>
 #include <fcntl.h>
 #include <math.h>
 #include "libg15render.h"
@@ -339,7 +343,7 @@ g15r_drawBar (g15canvas * canvas, int x1, int y1, int x2, int y2, int color,
 	      int num, int max, int type)
 {
   float len, length;
-  int x;
+
   if (max <= 0 || num <= 0)
     return;
   if (num > max)
@@ -472,7 +476,7 @@ g15r_loadWbmpToBuf(char *filename, int *img_width, int *img_height)
     int wbmp_fd;
     int retval;
     int x,y,val;
-    char *buf;
+    char *buf = NULL;
     unsigned int buflen,header=4;
     unsigned char headerbytes[5];
     unsigned int pixel_offset = 0;
