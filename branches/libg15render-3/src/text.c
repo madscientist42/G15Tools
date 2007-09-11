@@ -19,7 +19,7 @@
 #include "libg15render.h"
 
 void
-g15r_renderCharacterLarge (g15canvas * canvas, int col, int row,
+g15r_renderCharacterLarge (render_context_t *rctx, int col, int row,
 			   unsigned char character, unsigned int sx,
 			   unsigned int sy)
 {
@@ -36,10 +36,10 @@ g15r_renderCharacterLarge (g15canvas * canvas, int col, int row,
 	  char font_entry = fontdata_8x8[helper + y];
 
 	  if (font_entry & 1 << (7 - x))
-	    g15r_setPixel (canvas, top_left_pixel_x + x, top_left_pixel_y + y,
+	    g15r_setPixel (rctx, top_left_pixel_x + x, top_left_pixel_y + y,
 			   G15_COLOR_BLACK);
 	  else
-	    g15r_setPixel (canvas, top_left_pixel_x + x, top_left_pixel_y + y,
+	    g15r_setPixel (rctx, top_left_pixel_x + x, top_left_pixel_y + y,
 			   G15_COLOR_WHITE);
 
 	}
@@ -47,7 +47,7 @@ g15r_renderCharacterLarge (g15canvas * canvas, int col, int row,
 }
 
 void
-g15r_renderCharacterMedium (g15canvas * canvas, int col, int row,
+g15r_renderCharacterMedium (render_context_t *rctx, int col, int row,
 			    unsigned char character, unsigned int sx,
 			    unsigned int sy)
 {
@@ -63,10 +63,10 @@ g15r_renderCharacterMedium (g15canvas * canvas, int col, int row,
 	{
 	  char font_entry = fontdata_7x5[helper + y * 5 + x];
 	  if (font_entry)
-	    g15r_setPixel (canvas, top_left_pixel_x + x, top_left_pixel_y + y,
+	    g15r_setPixel (rctx, top_left_pixel_x + x, top_left_pixel_y + y,
 			   G15_COLOR_BLACK);
 	  else
-	    g15r_setPixel (canvas, top_left_pixel_x + x, top_left_pixel_y + y,
+	    g15r_setPixel (rctx, top_left_pixel_x + x, top_left_pixel_y + y,
 			   G15_COLOR_WHITE);
 
 	}
@@ -74,7 +74,7 @@ g15r_renderCharacterMedium (g15canvas * canvas, int col, int row,
 }
 
 void
-g15r_renderCharacterSmall (g15canvas * canvas, int col, int row,
+g15r_renderCharacterSmall (render_context_t *rctx, int col, int row,
 			   unsigned char character, unsigned int sx,
 			   unsigned int sy)
 {
@@ -90,10 +90,10 @@ g15r_renderCharacterSmall (g15canvas * canvas, int col, int row,
 	{
 	  char font_entry = fontdata_6x4[helper + y * 4 + x];
 	  if (font_entry)
-	    g15r_setPixel (canvas, top_left_pixel_x + x, top_left_pixel_y + y,
+	    g15r_setPixel (rctx, top_left_pixel_x + x, top_left_pixel_y + y,
 			   G15_COLOR_BLACK);
 	  else
-	    g15r_setPixel (canvas, top_left_pixel_x + x, top_left_pixel_y + y,
+	    g15r_setPixel (rctx, top_left_pixel_x + x, top_left_pixel_y + y,
 			   G15_COLOR_WHITE);
 
 	}
@@ -101,7 +101,7 @@ g15r_renderCharacterSmall (g15canvas * canvas, int col, int row,
 }
 
 void
-g15r_renderString (g15canvas * canvas, unsigned char stringOut[], int row,
+g15r_renderString (render_context_t *rctx, unsigned char stringOut[], int row,
 		   int size, unsigned int sx, unsigned int sy)
 {
 
@@ -112,17 +112,17 @@ g15r_renderString (g15canvas * canvas, unsigned char stringOut[], int row,
 	{
 	case G15_TEXT_SMALL:
 	  {
-	    g15r_renderCharacterSmall (canvas, i, row, stringOut[i], sx, sy);
+	    g15r_renderCharacterSmall (rctx, i, row, stringOut[i], sx, sy);
 	    break;
 	  }
 	case G15_TEXT_MED:
 	  {
-	    g15r_renderCharacterMedium (canvas, i, row, stringOut[i], sx, sy);
+	    g15r_renderCharacterMedium (rctx, i, row, stringOut[i], sx, sy);
 	    break;
 	  }
 	case G15_TEXT_LARGE:
 	  {
-	    g15r_renderCharacterLarge (canvas, i, row, stringOut[i], sx, sy);
+	    g15r_renderCharacterLarge (rctx, i, row, stringOut[i], sx, sy);
 	    break;
 	  }
 	default:
@@ -136,13 +136,13 @@ g15r_renderString (g15canvas * canvas, unsigned char stringOut[], int row,
 /**
  * Load a font for use with FreeType2 font support
  * 
- * \param canvas A pointer to a g15canvas struct in which the buffer to be operated on is found.
+ * \param rctx A pointer to a render_context_t in which the buffer to be operated on is found.
  * \param fontname Absolute pathname to font file to be loaded.
  * \param fontsize Size in points for font to be loaded.
  * \param face_num Slot into which font face will be loaded.
  */
 void
-g15r_ttfLoad (g15canvas * canvas, char *fontname, int fontsize, int face_num)
+g15r_ttfLoad (render_context_t *rctx, char *fontname, int fontsize, int face_num)
 {
   int errcode = 0;
 
@@ -151,27 +151,27 @@ g15r_ttfLoad (g15canvas * canvas, char *fontname, int fontsize, int face_num)
   if (face_num > G15_MAX_FACE)
     face_num = G15_MAX_FACE;
 
-  if (canvas->ttf_fontsize[face_num])
-    FT_Done_Face (canvas->ttf_face[face_num][0]);	/* destroy the last face */
+  if (rctx->canvas->ttf_fontsize[face_num])
+    FT_Done_Face (rctx->canvas->ttf_face[face_num][0]);	/* destroy the last face */
 
-  if (!canvas->ttf_fontsize[face_num] && !fontsize)
-    canvas->ttf_fontsize[face_num] = 10;
+  if (!rctx->canvas->ttf_fontsize[face_num] && !fontsize)
+    rctx->canvas->ttf_fontsize[face_num] = 10;
   else
-    canvas->ttf_fontsize[face_num] = fontsize;
+    rctx->canvas->ttf_fontsize[face_num] = fontsize;
 
   errcode =
-    FT_New_Face (canvas->ftLib, fontname, 0, &canvas->ttf_face[face_num][0]);
+    FT_New_Face (rctx->canvas->ftLib, fontname, 0, &rctx->canvas->ttf_face[face_num][0]);
   if (errcode)
     {
-      canvas->ttf_fontsize[face_num] = 0;
+      rctx->canvas->ttf_fontsize[face_num] = 0;
     }
   else
     {
-      if (canvas->ttf_fontsize[face_num]
-	  && FT_IS_SCALABLE (canvas->ttf_face[face_num][0]))
+      if (rctx->canvas->ttf_fontsize[face_num]
+	  && FT_IS_SCALABLE (rctx->canvas->ttf_face[face_num][0]))
 	errcode =
-	  FT_Set_Char_Size (canvas->ttf_face[face_num][0], 0,
-			    canvas->ttf_fontsize[face_num] * 64, 90, 0);
+	  FT_Set_Char_Size (rctx->canvas->ttf_face[face_num][0], 0,
+			    rctx->canvas->ttf_fontsize[face_num] * 64, 90, 0);
     }
 }
 
@@ -230,7 +230,7 @@ calc_ttf_right_justify (FT_Face face, char *str)
 }
 
 void
-draw_ttf_char (g15canvas * canvas, FT_Bitmap charbitmap,
+draw_ttf_char (render_context_t *rctx, FT_Bitmap charbitmap,
 	       unsigned char character, int x, int y, int color)
 {
   FT_Int char_x, char_y, p, q;
@@ -239,16 +239,16 @@ draw_ttf_char (g15canvas * canvas, FT_Bitmap charbitmap,
   static FT_Bitmap tmpbuffer;
 
   /* convert to 8bit format.. */
-  FT_Bitmap_Convert (canvas->ftLib, &charbitmap, &tmpbuffer, 1);
+  FT_Bitmap_Convert (rctx->canvas->ftLib, &charbitmap, &tmpbuffer, 1);
 
   for (char_y = y, q = 0; char_y < y_max; char_y++, q++)
       for (char_x = x, p = 0; char_x < x_max; char_x++, p++)
 	  if (tmpbuffer.buffer[q * tmpbuffer.width + p])
-	    g15r_setPixel (canvas, char_x, char_y, color);
+	    g15r_setPixel (rctx, char_x, char_y, color);
 }
 
 void
-draw_ttf_str (g15canvas * canvas, char *str, int x, int y, int color,
+draw_ttf_str (render_context_t *rctx, char *str, int x, int y, int color,
 	      FT_Face face)
 {
   FT_GlyphSlot slot = face->glyph;
@@ -261,7 +261,7 @@ draw_ttf_str (g15canvas * canvas, char *str, int x, int y, int color,
 	FT_Load_Char (face, str[i],
 		      FT_LOAD_RENDER | FT_LOAD_MONOCHROME |
 		      FT_LOAD_TARGET_MONO);
-      draw_ttf_char (canvas, slot->bitmap, str[i], x + slot->bitmap_left,
+      draw_ttf_char (rctx, slot->bitmap, str[i], x + slot->bitmap_left,
 		     y - slot->bitmap_top, color);
       x += slot->advance.x >> 6;
     }
@@ -270,7 +270,7 @@ draw_ttf_str (g15canvas * canvas, char *str, int x, int y, int color,
 /**
  * Render a string with a FreeType2 font
  * 
- * \param canvas A pointer to a g15canvas struct in which the buffer to be operated on is found.
+ * \param rctx A pointer to a render_context_t in which the buffer to be operated on is found.
  * \param x initial x position for string.
  * \param y initial y position for string.
  * \param fontsize Size of string in points.
@@ -280,31 +280,31 @@ draw_ttf_str (g15canvas * canvas, char *str, int x, int y, int color,
  * \param print_string Pointer to the string to be printed.
  */
 void
-g15r_ttfPrint (g15canvas * canvas, int x, int y, int fontsize, int face_num,
+g15r_ttfPrint (render_context_t *rctx, int x, int y, int fontsize, int face_num,
 	       int color, int center, char *print_string)
 {
   int errcode = 0;
 
-  if (canvas->ttf_fontsize[face_num])
+  if (rctx->canvas->ttf_fontsize[face_num])
     {
-      if (fontsize > 0 && FT_IS_SCALABLE (canvas->ttf_face[face_num][0]))
+      if (fontsize > 0 && FT_IS_SCALABLE (rctx->canvas->ttf_face[face_num][0]))
 	{
-	  canvas->ttf_fontsize[face_num] = fontsize;
+	  rctx->canvas->ttf_fontsize[face_num] = fontsize;
 	  int errcode =
-	    FT_Set_Pixel_Sizes (canvas->ttf_face[face_num][0], 0,
-				canvas->ttf_fontsize[face_num]);
+	    FT_Set_Pixel_Sizes (rctx->canvas->ttf_face[face_num][0], 0,
+				rctx->canvas->ttf_fontsize[face_num]);
 	  if (errcode)
 	    printf ("Trouble setting the Glyph size!\n");
 	}
       y =
-	calc_ttf_true_ypos (canvas->ttf_face[face_num][0], y,
-			    canvas->ttf_fontsize[face_num]);
+	calc_ttf_true_ypos (rctx->canvas->ttf_face[face_num][0], y,
+			    rctx->canvas->ttf_fontsize[face_num]);
       if (center == 1)
-	x = calc_ttf_centering (canvas->ttf_face[face_num][0], print_string);
+	x = calc_ttf_centering (rctx->canvas->ttf_face[face_num][0], print_string);
       else if (center == 2)
-        x = calc_ttf_right_justify (canvas->ttf_face[face_num][0], print_string);
-      draw_ttf_str (canvas, print_string, x, y, color,
-		    canvas->ttf_face[face_num][0]);
+        x = calc_ttf_right_justify (rctx->canvas->ttf_face[face_num][0], print_string);
+      draw_ttf_str (rctx, print_string, x, y, color,
+		    rctx->canvas->ttf_face[face_num][0]);
     }
 }
 #endif /* TTF_SUPPORT */

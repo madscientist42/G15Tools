@@ -24,18 +24,22 @@
  * \param canvas A pointer to a g15canvas struct in which the buffer to be operated on is found.
  * \param x X offset for pixel to be retrieved.
  * \param y Y offset for pixel to be retrieved.
+ * \return int value of pixel at (x, y) or G15R_ERROR_PARAMETER
  */
 int
-g15r_getPixel (g15canvas * canvas, unsigned int x, unsigned int y)
+g15r_getPixel (render_context_t *rctx, unsigned int x, unsigned int y)
 {
-  if (x >= G15_LCD_WIDTH || y >= G15_LCD_HEIGHT)
-    return 0;
+  if ((x >= G15_LCD_WIDTH || x < 0) || (y >= G15_LCD_HEIGHT || y < 0))
+    return G15R_ERROR_PARAMETER;
+
+  if (rctx == NULL)
+    return G15R_ERROR_PARAMETER;
 
   unsigned int pixel_offset = y * G15_LCD_WIDTH + x;
   unsigned int byte_offset = pixel_offset / BYTE_SIZE;
   unsigned int bit_offset = 7 - (pixel_offset % BYTE_SIZE);
 
-  return (canvas->buffer[byte_offset] & (1 << bit_offset)) >> bit_offset;
+  return (rctx->canvas->buffer[byte_offset] & (1 << bit_offset)) >> bit_offset;
 }
 
 /**
@@ -45,29 +49,37 @@ g15r_getPixel (g15canvas * canvas, unsigned int x, unsigned int y)
  * \param x X offset for pixel to be set.
  * \param y Y offset for pixel to be set.
  * \param val Value to which pixel should be set.
+ * \return int G15R_ERROR_NONE or G15R_ERROR_PARAMETER
  */
-void
-g15r_setPixel (g15canvas * canvas, unsigned int x, unsigned int y, int val)
+int
+g15r_setPixel (render_context_t *rctx, unsigned int x, unsigned int y, int val)
 {
-  if (x >= G15_LCD_WIDTH || y >= G15_LCD_HEIGHT)
-    return;
+  if ((x >= G15_LCD_WIDTH || x < 0) || (y >= G15_LCD_HEIGHT || y < 0))
+    return G15R_ERROR_PARAMETER;
+
+  if (val != 0)
+    val = 1;
+
+  if (rctx == NULL)
+    return G15R_ERROR_PARAMETER;
 
   unsigned int pixel_offset = y * G15_LCD_WIDTH + x;
   unsigned int byte_offset = pixel_offset / BYTE_SIZE;
   unsigned int bit_offset = 7 - (pixel_offset % BYTE_SIZE);
 
-  if (canvas->mode_xor)
-    val ^= g15r_getPixel (canvas, x, y);
-  if (canvas->mode_reverse)
+  if (rctx->canvas->mode_xor)
+    val ^= g15r_getPixel (rctx, x, y);
+  if (rctx->canvas->mode_reverse)
     val = !val;
 
   if (val)
-    canvas->buffer[byte_offset] =
-      canvas->buffer[byte_offset] | 1 << bit_offset;
+    rctx->canvas->buffer[byte_offset] =
+      rctx->canvas->buffer[byte_offset] | 1 << bit_offset;
   else
-    canvas->buffer[byte_offset] =
-      canvas->buffer[byte_offset] & ~(1 << bit_offset);
+    rctx->canvas->buffer[byte_offset] =
+      rctx->canvas->buffer[byte_offset] & ~(1 << bit_offset);
 
+  return G15R_ERROR_NONE;
 }
 
 /**
@@ -75,27 +87,37 @@ g15r_setPixel (g15canvas * canvas, unsigned int x, unsigned int y, int val)
  * 
  * \param canvas A pointer to a g15canvas struct in which the buffer to be operated on is found.
  * \param color Screen will be filled with this color.
+ * \return int G15R_ERROR_NONE or G15R_ERROR_PARAMETER
  */
-void
-g15r_clearScreen (g15canvas * canvas, int color)
+int
+g15r_clearScreen (render_context_t *rctx, int color)
 {
-  memset (canvas->buffer, (color ? 0xFF : 0), G15_BUFFER_LEN);
+  if (rctx == NULL)
+    return G15R_ERROR_PARAMETER;
+
+  memset (rctx->canvas->buffer, (color ? 0xFF : 0), G15_BUFFER_LEN);
+  return G15R_ERROR_NONE;
 }
 
 /**
  * Clears the screen and resets the mode values for a canvas
  * 
  * \param canvas A pointer to a g15canvas struct
+ * \return int G15R_ERROR_NONE or G15R_ERROR_PARAMETER
  */
-void
-g15r_initCanvas (g15canvas * canvas)
+int
+g15r_initCanvas (render_context_t *rctx)
 {
-  memset (canvas->buffer, 0, G15_BUFFER_LEN);
-  canvas->mode_cache = 0;
-  canvas->mode_reverse = 0;
-  canvas->mode_xor = 0;
+  memset (rctx->canvas->buffer, 0, G15_BUFFER_LEN);
+  rctx->canvas->mode_cache = 0;
+  rctx->canvas->mode_reverse = 0;
+  rctx->canvas->mode_xor = 0;
 #ifdef TTF_SUPPORT
-  if (FT_Init_FreeType (&canvas->ftLib))
+  if (FT_Init_FreeType (&rctx->canvas->ftLib))
+  {
     printf ("Freetype couldnt initialise\n");
+    return G15R_ERROR_PARAMETER;
+  }
 #endif
+  return G15R_ERROR_NONE;
 }

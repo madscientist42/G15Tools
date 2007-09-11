@@ -22,18 +22,6 @@
 #include <string.h>
 #include "libg15render.h"
 
-// Magic indentifier for the render context structure.
-#define G15R_RCTX_MAGIC 0xa358
-
-struct render_context_s {
-    unsigned short int magic;
-    g15canvas *canvas;
-    char *name;
-    struct render_context_s *next;
-};
-
-typedef struct render_context_s render_context_t;
-
 // Linked list of allocated render contexts.
 static render_context_t *rctxlist = NULL;
 
