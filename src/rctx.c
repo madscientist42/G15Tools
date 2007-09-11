@@ -117,6 +117,50 @@ g15r_rctx_new (render_context_t *rctx, const char *name, g15r_bool_t activate)
     return G15R_ERROR_NONE;
 }
 
+int
+g15r_rctx_release_context(render_context_t *rctx)
+{
+	if(rctx == NULL)
+		return G15R_ERROR_PARAMETER;
+
+	render_context_t *prev = NULL;
+	render_context_t *cur = rctxlist;
+
+	while(cur != NULL)
+	{
+		if(rctx == cur)
+		{
+			if(prev != NULL)
+				prev->next = cur->next;
+
+			if(c_rctx == rctx)
+				c_rctx = cur->next;
+
+			free(rctx->canvas);
+			free(rctx->name);
+			free(rctx);
+			return G15R_ERROR_NONE;
+		} else {
+			prev = cur;
+			cur = cur->next;
+		}
+	}
+	return G15R_ERROR_RCTX_NOT_FOUND;
+}
+
+int
+g15r_rctx_release_context_with_name (const char *name)
+{
+	render_context_t *search = NULL;
+
+	if(name == NULL || name == "") return G15R_ERROR_PARAMETER;
+
+	if(g15r_rctx_get_context_from_name (search, name) == G15R_ERROR_NONE) {
+		return g15r_rctx_release_context (search);
+	}
+	return G15R_ERROR_RCTX_NOT_FOUND;
+}
+
 void
 g15r_rctx_release_all_contexts (void)
 {
