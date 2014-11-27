@@ -1,7 +1,7 @@
 G15Tools
 ========
 
-This is a fork of the currently (as 0f 11-27-14) neglected G15 Tools project 
+This is a fork of the currently (as of 11-27-14) neglected G15 Tools project 
 repository.  It is the lump of subprojects that resided in the SourceForge
 SVN repo as of the aforementioned date.  It's being pulled to allow me to
 work on getting it back properly functional (seems that it's got a single
